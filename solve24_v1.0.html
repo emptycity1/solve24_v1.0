@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>算24点小游戏v1.0</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      color: #333;
+      font-size: 1.5rem;
+    }
+    .game-container {
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 90%;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .cards {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+      overflow-x: auto; /* 水平滚动 */
+      white-space: nowrap; /* 防止换行 */
+    }
+    .card img {
+      width: 76px; /* 统一宽度为 76px */
+      height: 110px; /* 统一高度为 110px */
+      margin: 1px; /* 调整间隔为 1px */
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      flex-shrink: 0; /* 防止图片缩小 */
+      object-fit: cover; /* 确保图片比例不变且填满指定区域 */
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .message {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: #333;
+    }
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.2rem;
+      }
+      button {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+      }
+      .message {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>算24点小游戏v1.0</h1>
+    <p style="font-size: 0.9rem;">规则：我会发四张牌，你需要通过加减乘除得到24。（黑Joker=14，红Joker=15）</p>
+    <div class="cards" id="cards"></div>
+    <button onclick="newGame()">重新发牌</button>
+    <button onclick="showAnswer()">显示答案</button>
+    <div class="message" id="message"></div>
+  </div>
+  <script>
+    // 定义扑克牌的数字范围（A=1, J=11, Q=12, K=13, 黑Joker=14, 红Joker=15）
+    const CARD_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    // 定义扑克牌的花色范围
+    const CARD_SUITS = ['S', 'H', 'D', 'C']; // Spades, Hearts, Diamonds, Clubs
+
+    // 扑克牌图片映射（支持多种花色和 Joker）
+    const CARD_IMAGES = {
+      // Spades (♠️)
+      '1S': 'https://deckofcardsapi.com/static/img/AS.png', // A
+      '2S': 'https://deckofcardsapi.com/static/img/2S.png',
+      '3S': 'https://deckofcardsapi.com/static/img/3S.png',
+      '4S': 'https://deckofcardsapi.com/static/img/4S.png',
+      '5S': 'https://deckofcardsapi.com/static/img/5S.png',
+      '6S': 'https://deckofcardsapi.com/static/img/6S.png',
+      '7S': 'https://deckofcardsapi.com/static/img/7S.png',
+      '8S': 'https://deckofcardsapi.com/static/img/8S.png',
+      '9S': 'https://deckofcardsapi.com/static/img/9S.png',
+      '10S': 'https://deckofcardsapi.com/static/img/0S.png', // 10
+      '11S': 'https://deckofcardsapi.com/static/img/JS.png', // J
+      '12S': 'https://deckofcardsapi.com/static/img/QS.png', // Q
+      '13S': 'https://deckofcardsapi.com/static/img/KS.png', // K
+
+      // Hearts (❤️)
+      '1H': 'https://deckofcardsapi.com/static/img/AH.png', // A
+      '2H': 'https://deckofcardsapi.com/static/img/2H.png',
+      '3H': 'https://deckofcardsapi.com/static/img/3H.png',
+      '4H': 'https://deckofcardsapi.com/static/img/4H.png',
+      '5H': 'https://deckofcardsapi.com/static/img/5H.png',
+      '6H': 'https://deckofcardsapi.com/static/img/6H.png',
+      '7H': 'https://deckofcardsapi.com/static/img/7H.png',
+      '8H': 'https://deckofcardsapi.com/static/img/8H.png',
+      '9H': 'https://deckofcardsapi.com/static/img/9H.png',
+      '10H': 'https://deckofcardsapi.com/static/img/0H.png', // 10
+      '11H': 'https://deckofcardsapi.com/static/img/JH.png', // J
+      '12H': 'https://deckofcardsapi.com/static/img/QH.png', // Q
+      '13H': 'https://deckofcardsapi.com/static/img/KH.png', // K
+
+      // Diamonds (♦️)
+      '1D': 'https://deckofcardsapi.com/static/img/AD.png', // A
+      '2D': 'https://deckofcardsapi.com/static/img/2D.png',
+      '3D': 'https://deckofcardsapi.com/static/img/3D.png',
+      '4D': 'https://deckofcardsapi.com/static/img/4D.png',
+      '5D': 'https://deckofcardsapi.com/static/img/5D.png',
+      '6D': 'https://deckofcardsapi.com/static/img/6D.png',
+      '7D': 'https://deckofcardsapi.com/static/img/7D.png',
+      '8D': 'https://deckofcardsapi.com/static/img/8D.png',
+      '9D': 'https://deckofcardsapi.com/static/img/9D.png',
+      '10D': 'https://deckofcardsapi.com/static/img/0D.png', // 10
+      '11D': 'https://deckofcardsapi.com/static/img/JD.png', // J
+      '12D': 'https://deckofcardsapi.com/static/img/QD.png', // Q
+      '13D': 'https://deckofcardsapi.com/static/img/KD.png', // K
+
+      // Clubs (♣️)
+      '1C': 'https://deckofcardsapi.com/static/img/AC.png', // A
+      '2C': 'https://deckofcardsapi.com/static/img/2C.png',
+      '3C': 'https://deckofcardsapi.com/static/img/3C.png',
+      '4C': 'https://deckofcardsapi.com/static/img/4C.png',
+      '5C': 'https://deckofcardsapi.com/static/img/5C.png',
+      '6C': 'https://deckofcardsapi.com/static/img/6C.png',
+      '7C': 'https://deckofcardsapi.com/static/img/7C.png',
+      '8C': 'https://deckofcardsapi.com/static/img/8C.png',
+      '9C': 'https://deckofcardsapi.com/static/img/9C.png',
+      '10C': 'https://deckofcardsapi.com/static/img/0C.png', // 10
+      '11C': 'https://deckofcardsapi.com/static/img/JC.png', // J
+      '12C': 'https://deckofcardsapi.com/static/img/QC.png', // Q
+      '13C': 'https://deckofcardsapi.com/static/img/KC.png', // K
+
+      // Joker
+      '14': 'https://deckofcardsapi.com/static/img/X1.png', // 黑Joker
+      '15': 'https://deckofcardsapi.com/static/img/X2.png'  // 红Joker
+    };
+
+    // 检查是否可以通过某种运算得到24，并返回一个解法
+    function solve24(cards) {
+      const operators = ['+', '-', '*', '/'];
+      for (let nums of getPermutations(cards)) { // 尝试所有数字排列
+        for (let ops of getProduct(operators, 3)) { // 尝试所有运算符组合
+          try {
+            const expr1 = `((${nums[0]}${ops[0]}${nums[1]})${ops[1]}${nums[2]})${ops[2]}${nums[3]}`;
+            const expr2 = `(${nums[0]}${ops[0]}(${nums[1]}${ops[1]}${nums[2]}))${ops[2]}${nums[3]}`;
+            if (Math.abs(eval(expr1) - 24) < 1e-6) return expr1;
+            if (Math.abs(eval(expr2) - 24) < 1e-6) return expr2;
+          } catch (e) {
+            continue; // 忽略除零错误等异常
+          }
+        }
+      }
+      return null; // 如果没有找到解法
+    }
+
+    // 随机生成一组可以算出24的四张牌（带花色，包括 Joker）
+    function generateValidCards() {
+      while (true) {
+        const cards = Array.from({ length: 4 }, () => {
+          const value = CARD_VALUES[Math.floor(Math.random() * CARD_VALUES.length)];
+          if (value === 14 || value === 15) {
+            return `${value}`; // Joker 不需要花色
+          }
+          const suit = CARD_SUITS[Math.floor(Math.random() * CARD_SUITS.length)];
+          return `${value}${suit}`; // 返回带花色的牌，例如 "1S" 或 "11H"
+        });
+        if (solve24(cards.map(card => parseInt(card)))) { // 只检查数值部分
+          return cards;
+        }
+      }
+    }
+
+    // 获取数组的所有排列
+    function getPermutations(arr) {
+      if (arr.length === 1) return [arr];
+      const result = [];
+      for (let i = 0; i < arr.length; i++) {
+        const current = arr[i];
+        const remaining = arr.slice(0, i).concat(arr.slice(i + 1));
+        const remainingPerms = getPermutations(remaining);
+        for (let perm of remainingPerms) {
+          result.push([current].concat(perm));
+        }
+      }
+      return result;
+    }
+
+    // 获取重复笛卡尔积
+    function getProduct(arr, repeat) {
+      let result = [[]];
+      for (let i = 0; i < repeat; i++) {
+        const temp = [];
+        for (let item of result) {
+          for (let elem of arr) {
+            temp.push(item.concat(elem));
+          }
+        }
+        result = temp;
+      }
+      return result;
+    }
+
+    // 游戏状态
+    let currentCards = [];
+    let currentSolution = '';
+
+    // 显示卡片
+    function displayCards(cards) {
+      const cardsDiv = document.getElementById('cards');
+      cardsDiv.innerHTML = '';
+      cards.forEach(card => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card';
+        const img = document.createElement('img');
+        img.src = CARD_IMAGES[card]; // 使用完整的牌标识符（如 "1S" 或 "11H" 或 "14"）
+        img.alt = card === '14' ? '黑Joker' : card === '15' ? '红Joker' : card;
+        img.onerror = () => {
+          img.src = 'https://via.placeholder.com/80x120?text=Error'; // 备用占位图
+        };
+        cardDiv.appendChild(img);
+        cardsDiv.appendChild(cardDiv);
+      });
+    }
+
+    // 开始新游戏
+    function newGame() {
+      currentCards = generateValidCards();
+      currentSolution = solve24(currentCards.map(card => parseInt(card))); // 只传递数值部分
+      displayCards(currentCards);
+      document.getElementById('message').textContent = '';
+    }
+
+    // 显示答案
+    function showAnswer() {
+      if (currentSolution) {
+        document.getElementById('message').textContent = `一种可能的解法是：${currentSolution}`;
+      } else {
+        document.getElementById('message').textContent = '未找到解法，请尝试重新发牌！';
+      }
+    }
+
+    // 初始化游戏
+    window.onload = newGame;
+  </script>
+</body>
+</html>
